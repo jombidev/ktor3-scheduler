@@ -1,116 +1,139 @@
 package net.kiberion.ktor_scheduler
 
 import io.ktor.server.application.*
-import io.ktor.server.testing.withTestApplication
-import net.kiberion.ktor_scheduler.utils.initH2Database
+import io.ktor.server.testing.*
+import kotlinx.coroutines.*
 import org.awaitility.Awaitility.await
-import org.jobrunr.scheduling.cron.Cron
-import org.jobrunr.storage.sql.h2.H2StorageProvider
-import org.junit.jupiter.api.Test
-import strikt.api.expectThat
-import strikt.assertions.isEqualTo
-import strikt.assertions.isLessThan
-import java.util.concurrent.TimeUnit
+import org.awaitility.kotlin.atMost
+import org.jobrunr.storage.InMemoryStorageProvider
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.seconds
 
-private fun Application.testModule() {
-    install(Scheduler) {
-        storageProvider = H2StorageProvider(initH2Database())
-        threads = 3
-    }
-}
-
-var atomicCounter = AtomicInteger()
+private val atomicCounter = AtomicInteger()
 
 class SchedulerTest {
+    companion object {
+        const val EVERY_5S_CRON = "*/5 * * * * *"
+    }
 
-    private fun jobPayload(addedValue: Int) {
+    private fun Application.testModule() {
+        install(Scheduler) {
+            storageProvider = InMemoryStorageProvider()
+            pollInterval = 1.seconds
+            threads = 3
+        }
+    }
+
+    private fun taskIncrementOnlyOnce(addedValue: Int) {
         val oldValue = atomicCounter.getAndAdd(addedValue)
         if (oldValue > 0) {
             throw IllegalStateException("Exceeded amount of increments")
         }
     }
 
-    private fun jobPayloadInfinite(addedValue: Int) {
+    private fun taskIncrement(addedValue: Int) {
         atomicCounter.getAndAdd(addedValue)
     }
 
-    private fun taskPayload(addedValue: Int) {
-        atomicCounter.getAndAdd(addedValue)
+    @BeforeTest
+    fun `set the atomic counter to zero`() {
+        atomicCounter.set(0)
     }
 
     @Test
-    fun `should execute recurring job`(): Unit =
-        withTestApplication({
-            testModule()
-            atomicCounter.set(0)
-            schedule {
-                recurringJob("incCounter", Cron.minutely()) {
-                    jobPayload(1)
+    fun `should execute recurring job`() {
+        testApplication {
+            assertEquals(0, atomicCounter.get())
+
+            application {
+                testModule()
+                schedule {
+                    recurringJob("incCounter", EVERY_5S_CRON) { // every seconds
+                        taskIncrementOnlyOnce(1)
+                    }
                 }
             }
-        }) {
-            expectThat(atomicCounter.get()).isEqualTo(0)
-            await().atMost(90, TimeUnit.SECONDS).until {
-                atomicCounter.get() == 1
+
+            startApplication()
+
+            await()
+                .atMost(6.seconds)
+                .until {
+                    atomicCounter.get() == 1
+                }
+        }
+    }
+
+    @Test
+    fun `should override existing recurring job when id match`(): Unit = testApplication {
+        assertEquals(0, atomicCounter.get())
+
+        application {
+            testModule()
+            schedule {
+                recurringJob("incCounter", EVERY_5S_CRON) {
+                    taskIncrementOnlyOnce(1)
+                }
+            }
+            schedule {
+                recurringJob("incCounter", EVERY_5S_CRON) {
+                    taskIncrementOnlyOnce(2)
+                }
             }
         }
 
-    @Test
-    fun `should override existing recurring job when id match`(): Unit =
-        withTestApplication({
-            testModule()
-            atomicCounter.set(0)
-            schedule {
-                recurringJob("incCounter", "* * * * *") {
-                    jobPayload(1)
-                }
-            }
-            schedule {
-                recurringJob("incCounter", "* * * * *") {
-                    jobPayload(2)
-                }
-            }
-        }) {
-            expectThat(atomicCounter.get()).isEqualTo(0)
-            await().atMost(90, TimeUnit.SECONDS).until {
+        startApplication()
+
+        await()
+            .atMost(6.seconds)
+            .until {
                 atomicCounter.get() == 2
             }
-        }
+    }
 
     @Test
-    fun `should enqueue multiple tasks`(): Unit =
-        withTestApplication({
+    fun `should enqueue multiple tasks`(): Unit = testApplication {
+        assertEquals(0, atomicCounter.get())
+
+        application {
             testModule()
-            atomicCounter.set(0)
-        }) {
-            val scheduler: Scheduler = this.application.attributes[Scheduler.SchedulerKey]
 
-            scheduler.scheduleEnqueuedTask { taskPayload(1) }
-            scheduler.scheduleEnqueuedTask { taskPayload(3) }
-            scheduler.scheduleEnqueuedTask { taskPayload(10) }
+            val scheduler = attributes[Scheduler.SchedulerKey]
 
-            expectThat(atomicCounter.get()).isEqualTo(0)
-            await().atMost(90, TimeUnit.SECONDS).until {
+            scheduler.scheduleEnqueuedTask { taskIncrement(1) }
+            scheduler.scheduleEnqueuedTask { taskIncrement(3) }
+            scheduler.scheduleEnqueuedTask { taskIncrement(10) }
+        }
+
+        startApplication()
+
+        await()
+            .atMost(6.seconds)
+            .until {
                 atomicCounter.get() == 14
             }
-        }
+    }
 
     @Test
-    fun `should stop execution after application shutdown`(): Unit =
-        withTestApplication({
-            testModule()
-            atomicCounter.set(0)
-            schedule {
-                recurringJob("incCounter", Cron.minutely()) {
-                    jobPayloadInfinite(1)
+    fun `should stop execution after application shutdown`() = runBlocking {
+        assertEquals(0, atomicCounter.get())
+
+        testApplication {
+            application {
+                testModule()
+                schedule {
+                    recurringJob("incCounter", EVERY_5S_CRON) {
+                        taskIncrement(1)
+                    }
                 }
             }
-        }) {
-            this.application.dispose()
-            val oldValue = atomicCounter.get()
-            expectThat(oldValue).isLessThan(2)
-            TimeUnit.SECONDS.sleep(70)
-            expectThat(atomicCounter.get()).isEqualTo(oldValue)
         }
+
+        val oldValue = atomicCounter.get()
+        delay(6.seconds)
+        assertEquals(oldValue, atomicCounter.get())
+    }
 }
