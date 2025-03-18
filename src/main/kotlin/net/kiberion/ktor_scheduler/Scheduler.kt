@@ -5,8 +5,10 @@ import io.ktor.util.*
 import org.jobrunr.configuration.JobRunr
 import org.jobrunr.configuration.JobRunrConfiguration
 import org.jobrunr.jobs.lambdas.JobLambda
+import org.jobrunr.server.BackgroundJobServerConfiguration
 import java.io.Closeable
 import java.util.*
+import kotlin.time.toJavaDuration
 
 class Scheduler(
     val configuration: SchedulerConfiguration,
@@ -50,7 +52,12 @@ class Scheduler(
 
             val jobRunr: JobRunrConfiguration.JobRunrConfigurationResult = JobRunr.configure()
                 .useStorageProvider(configuration.storageProvider)
-                .useBackgroundJobServer(configuration.threads)
+                .useBackgroundJobServer(
+                    BackgroundJobServerConfiguration
+                        .usingStandardBackgroundJobServerConfiguration()
+                        .andWorkerCount(configuration.threads)
+                        .andPollInterval(configuration.pollInterval.toJavaDuration())
+                )
                 .initialize()
 
             val scheduler = Scheduler(configuration, jobRunr)
