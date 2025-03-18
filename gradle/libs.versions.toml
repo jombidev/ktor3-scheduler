@@ -1,0 +1,26 @@
+[versions]
+kotlin="2.1.0"
+ktor="3.1.1"
+hikari="6.2.1"
+jobrunr="7.4.1"
+h2="2.3.232"
+awaitility="4.3.0"
+jackson="2.18.3"
+
+[libraries]
+ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
+ktor-server-test = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
+
+jobrunr = { module = "org.jobrunr:jobrunr", version.ref = "jobrunr" }
+jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
+jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
+
+commons-codec = { module = "commons-codec:commons-codec", version.strictly = "1.18.0" }
+logback = { module = "ch.qos.logback:logback-classic", version.strictly = "1.4.14" }
+hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+h2 = { module = "com.h2database:h2", version.ref = "h2" }
+awaitility = { module = "org.awaitility:awaitility", version.ref = "awaitility" }
+awaitility-kotlin = { module = "org.awaitility:awaitility-kotlin", version.ref = "awaitility" }
+
+[bundles]
