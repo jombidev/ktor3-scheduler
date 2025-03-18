@@ -62,7 +62,7 @@ class Scheduler(
 
             val scheduler = Scheduler(configuration, jobRunr)
 
-            pipeline.environment.monitor.subscribe(ApplicationStopped) {
+            pipeline.monitor.subscribe(ApplicationStopped) {
                 jobRunr.jobScheduler.shutdown()
                 jobRunr.jobRequestScheduler.shutdown()
             }

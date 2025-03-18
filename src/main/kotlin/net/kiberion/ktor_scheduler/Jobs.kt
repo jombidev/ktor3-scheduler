@@ -2,7 +2,7 @@ package net.kiberion.ktor_scheduler
 
 import io.ktor.server.application.Application
 import io.ktor.server.application.plugin
-import io.ktor.util.*
+import io.ktor.utils.io.*
 import org.jobrunr.jobs.lambdas.JobLambda
 import java.util.*
 
