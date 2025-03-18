@@ -1,4 +1,4 @@
-package net.kiberion.ktor_scheduler
+package dev.jombi.ktor.plugins.scheduler
 
 import org.jobrunr.storage.AbstractStorageProvider
 import kotlin.time.Duration

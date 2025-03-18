@@ -1,4 +1,4 @@
-package net.kiberion.ktor_scheduler
+package dev.jombi.ktor.plugins.scheduler
 
 import io.ktor.server.application.Application
 import io.ktor.server.application.plugin
