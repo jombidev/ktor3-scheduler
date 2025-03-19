@@ -11,14 +11,11 @@ Gradle:
 ```kotlin
 repositories {
     mavenCentral()
-    maven {
-        url = uri("https://jitpack.io")
-    }
 }
 
 dependencies {
-    implementation("com.github.kibertoad:ktor-scheduler:1.0.4")
-    implementation("org.jobrunr:jobrunr:4.0.5")
+    implementation("dev.jombi:ktor3-scheduler:0.0.1")
+    implementation("org.jobrunr:jobrunr:7.4.1")
 }
 ```
 
@@ -31,6 +28,7 @@ fun Application.configureJobs() {
     install(Scheduler) {
         storageProvider = H2StorageProvider(initH2Database())
         threads = 5
+        pollInterval = 30.seconds
     }
 
     schedule {
@@ -62,8 +60,8 @@ scheduler.scheduleEnqueuedTask { taskPayload(1) }
 scheduler.scheduleEnqueuedTask { taskPayload(3) }
 scheduler.scheduleEnqueuedTask { taskPayload(10) }
 
-fun taskPayload() {
-    // Task logic here
+fun taskPayload(something: Int) {
+    // Task logic here...
 }
 
 ```
