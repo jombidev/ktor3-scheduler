@@ -2,7 +2,8 @@ package dev.jombi.ktor.plugins.scheduler
 
 import io.ktor.server.application.*
 import io.ktor.server.testing.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.awaitility.Awaitility.await
 import org.awaitility.kotlin.atMost
 import org.jobrunr.storage.InMemoryStorageProvider
@@ -13,6 +14,17 @@ import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
 
 private val atomicCounter = AtomicInteger()
+
+private fun taskIncrementOnlyOnce(addedValue: Int) {
+    val oldValue = atomicCounter.getAndAdd(addedValue)
+    if (oldValue > 0) {
+        throw IllegalStateException("Exceeded amount of increments")
+    }
+}
+
+private fun taskIncrement(addedValue: Int) {
+    atomicCounter.getAndAdd(addedValue)
+}
 
 class SchedulerTest {
     companion object {
@@ -25,17 +37,6 @@ class SchedulerTest {
             pollInterval = 1.seconds
             threads = 3
         }
-    }
-
-    private fun taskIncrementOnlyOnce(addedValue: Int) {
-        val oldValue = atomicCounter.getAndAdd(addedValue)
-        if (oldValue > 0) {
-            throw IllegalStateException("Exceeded amount of increments")
-        }
-    }
-
-    private fun taskIncrement(addedValue: Int) {
-        atomicCounter.getAndAdd(addedValue)
     }
 
     @BeforeTest

@@ -2,16 +2,18 @@ package dev.jombi.ktor.plugins.scheduler
 
 import io.ktor.server.application.*
 import io.ktor.util.*
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.InternalSerializationApi
 import org.jobrunr.configuration.JobRunr
 import org.jobrunr.configuration.JobRunrConfiguration
 import org.jobrunr.jobs.lambdas.JobLambda
+import org.jobrunr.kotlin.utils.mapper.KotlinxSerializationJsonMapper
 import org.jobrunr.server.BackgroundJobServerConfiguration
 import java.io.Closeable
 import java.util.*
 import kotlin.time.toJavaDuration
 
 class Scheduler(
-    val configuration: SchedulerConfiguration,
     val scheduler: JobRunrConfiguration.JobRunrConfigurationResult
 ) : Closeable {
 
@@ -43,6 +45,7 @@ class Scheduler(
         override val key: AttributeKey<Scheduler>
             get() = SchedulerKey
 
+        @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
         override fun install(
             pipeline: Application,
             configure: SchedulerConfiguration.() -> Unit
@@ -51,6 +54,7 @@ class Scheduler(
             configuration.apply(configure)
 
             val jobRunr: JobRunrConfiguration.JobRunrConfigurationResult = JobRunr.configure()
+                .useJsonMapper(KotlinxSerializationJsonMapper())
                 .useStorageProvider(configuration.storageProvider)
                 .useBackgroundJobServer(
                     BackgroundJobServerConfiguration
@@ -60,7 +64,7 @@ class Scheduler(
                 )
                 .initialize()
 
-            val scheduler = Scheduler(configuration, jobRunr)
+            val scheduler = Scheduler(jobRunr)
 
             pipeline.monitor.subscribe(ApplicationStopped) {
                 jobRunr.jobScheduler.shutdown()

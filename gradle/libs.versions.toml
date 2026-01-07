@@ -1,19 +1,20 @@
 [versions]
-kotlin="2.1.0"
+kotlin="2.2.0"
+kotlinx-serialization="1.9.0"
 ktor="3.1.1"
 hikari="6.2.1"
-jobrunr="7.4.1"
+jobrunr="8.3.1"
 h2="2.3.232"
 awaitility="4.3.0"
-jackson="2.18.3"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor-server-test = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
 
 jobrunr = { module = "org.jobrunr:jobrunr", version.ref = "jobrunr" }
-jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
-jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
+jobrunr-kotlin = { module = "org.jobrunr:jobrunr-kotlin-2.2-support", version.ref = "jobrunr" }
+
+kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref="kotlinx-serialization" }
 
 commons-codec = { module = "commons-codec:commons-codec", version.strictly = "1.18.0" }
 logback = { module = "ch.qos.logback:logback-classic", version.strictly = "1.4.14" }

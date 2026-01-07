@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
     kotlin("jvm") version libs.versions.kotlin
+    kotlin("plugin.serialization") version libs.versions.kotlin
     id("com.vanniktech.maven.publish") version "0.31.0-rc2"
 }
 
@@ -55,10 +56,8 @@ dependencies {
 
     implementation(libs.ktor.server.core)
     implementation(libs.jobrunr)
-
-    // TODO: wait for this: https://github.com/jobrunr/jobrunr/pull/1207
-    implementation(libs.jackson.core)
-    implementation(libs.jackson.kotlin)
+    implementation(libs.jobrunr.kotlin)
+    implementation(libs.kotlinx.serialization)
 
     // tests
     testImplementation(libs.commons.codec)
